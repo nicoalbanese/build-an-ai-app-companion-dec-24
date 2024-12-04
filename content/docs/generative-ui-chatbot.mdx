@@ -1,0 +1,231 @@
+---
+title: Generative UI
+---
+
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+
+The tool result in the UI doesn't look great and isn't something we would ever want to show to users. Wouldn't it be great if we could represent that information in a more engaging way? This is where generative user interfaces come in.
+
+Generative user interfaces (generative UI) is the process of allowing a large language model (LLM) to go beyond text and "generate UI". This creates a more engaging and AI-native experience for users.
+
+<Steps>
+
+<Step>
+To do this, we map over the toolInvocations we were already showing in the UI. If the toolName is equal to "getWeather", we pipe the results into the Weather component as props.
+
+
+Update your `page.tsx` with the following code:
+```tsx title="app/(5-chatbot)/chat/page.tsx"
+"use client";
+
+import { useChat } from "ai/react";
+import Weather from "./weather"; // [!code highlight]
+
+export default function Chat() {
+  const { messages, input, handleInputChange, handleSubmit } = useChat({
+    maxSteps: 5,
+  });
+  return (
+    <div className="flex flex-col w-full max-w-md py-24 mx-auto stretch">
+      {messages.map((m) => (
+        <div key={m.id} className="whitespace-pre-wrap">
+          {m.role === "user" ? "User: " : "AI: "}
+          {m.toolInvocations ? ( // [!code highlight]
+            m.toolInvocations.map((t) => // [!code highlight]
+              t.toolName === "getWeather" && t.state === "result" ? ( // [!code highlight]
+                <Weather key={t.toolCallId} weatherData={t.result} /> // [!code highlight]
+              ) : null, // [!code highlight]
+            ) // [!code highlight]
+          ) : ( // [!code highlight]
+            <p>{m.content}</p> // [!code highlight]
+          )} // [!code highlight]
+        </div>
+      ))}
+
+      <form onSubmit={handleSubmit}>
+        <input
+          className="fixed bottom-0 w-full max-w-md p-2 mb-8 border border-gray-300 rounded shadow-xl"
+          value={input}
+          placeholder="Say something..."
+          onChange={handleInputChange}
+        />
+      </form>
+    </div>
+  );
+}
+```
+</Step>
+<Step>
+Head back to the browser and try it out. Ask for the weather in a specific location and see how the UI dynamically generates a more engaging representation of the weather data.
+
+You should now see a visually appealing weather component displayed instead of raw JSON data when requesting weather information.
+</Step>
+
+<Step>
+You may also want to allow the component to interact with the chat and trigger subsequent generations! For example, you could add a button to get the weather for a random city. To do this, set an `id` on your `useChat` hook which will allow you to use the hook in any other component within your application.
+
+Update your `page.tsx` with the following code:
+```tsx title="app/(5-chatbot)/chat/page.tsx"
+"use client";
+
+import { useChat } from "ai/react";
+import Weather from "./weather";
+
+export default function Chat() {
+  const { messages, input, handleInputChange, handleSubmit } = useChat({
+    id: "weather", // [!code highlight]
+    maxSteps: 5,
+  });
+  return (
+    <div className="flex flex-col w-full max-w-md py-24 mx-auto stretch">
+      {messages.map((m) => (
+        <div key={m.id} className="whitespace-pre-wrap">
+          {m.role === "user" ? "User: " : "AI: "}
+          {m.toolInvocations ? (
+            m.toolInvocations.map((t) =>
+              t.toolName === "getWeather" && t.state === "result" ? (
+                <Weather key={t.toolCallId} weatherData={t.result} />
+              ) : null,
+            )
+          ) : (
+            <p>{m.content}</p>
+          )}
+        </div>
+      ))}
+
+      <form onSubmit={handleSubmit}>
+        <input
+          className="fixed bottom-0 w-full max-w-md p-2 mb-8 border border-gray-300 rounded shadow-xl"
+          value={input}
+          placeholder="Say something..."
+          onChange={handleInputChange}
+        />
+      </form>
+    </div>
+  );
+}
+```
+</Step>
+<Step>
+Now update the weather component to import and use the `useChat` hook to trigger a new weather request when the button is clicked.
+```tsx title="app/(5-chatbot)/chat/weather.tsx"
+import { useChat } from "ai/react"; // [!code highlight]
+import {
+  Cloud,
+  Sun,
+  CloudRain,
+  CloudSnow,
+  CloudFog,
+  CloudLightning,
+} from "lucide-react";
+import { useState } from "react";
+
+export interface WeatherData {
+  city: string;
+  temperature: number;
+  weatherCode: number;
+  humidity: number;
+}
+
+const defaultWeatherData: WeatherData = {
+  city: "San Francisco",
+  temperature: 18,
+  weatherCode: 1,
+  humidity: 65,
+};
+
+export default function Weather({
+  weatherData = defaultWeatherData,
+}: {
+  weatherData?: WeatherData;
+}) {
+  console.log(weatherData);
+  const { append } = useChat({ id: "weather" }); // [!code highlight]
+  const [clicked, setClicked] = useState(false); // [!code highlight]
+  const getWeatherIcon = (code: number) => {
+    switch (true) {
+      case code === 0:
+        return <Sun size={64} className="text-yellow-300" />;
+      case code <= 3:
+        return (
+          <div className="relative">
+            <Sun size={64} className="text-yellow-300" />
+            <Cloud
+              size={48}
+              className="text-gray-300 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"
+            />
+          </div>
+        );
+      case code <= 49:
+        return <Cloud size={64} className="text-gray-300" />;
+      case code <= 69:
+        return <CloudRain size={64} className="text-blue-300" />;
+      case code <= 79:
+        return <CloudSnow size={64} className="text-blue-200" />;
+      case code <= 84:
+        return <CloudRain size={64} className="text-blue-300" />;
+      case code <= 99:
+        return <CloudLightning size={64} className="text-yellow-400" />;
+      default:
+        return <Cloud size={64} className="text-gray-300" />;
+    }
+  };
+
+  const getWeatherCondition = (code: number) => {
+    switch (true) {
+      case code === 0:
+        return "Clear sky";
+      case code <= 3:
+        return "Partly cloudy";
+      case code <= 49:
+        return "Cloudy";
+      case code <= 69:
+        return "Rainy";
+      case code <= 79:
+        return "Snowy";
+      case code <= 84:
+        return "Rain showers";
+      case code <= 99:
+        return "Thunderstorm";
+      default:
+        return "Unknown";
+    }
+  };
+
+  return (
+    <div className="text-white p-8 rounded-3xl backdrop-blur-lg bg-gradient-to-b from-blue-400 to-blue-600 shadow-lg">
+      <button // [!code highlight]
+        disabled={clicked} // [!code highlight]
+        onClick={async () => { // [!code highlight]
+          setClicked(true); // [!code highlight]
+          append({ role: "user", content: "Get weather in a random place" }); // [!code highlight]
+        }} // [!code highlight]
+      > // [!code highlight]
+        {clicked ? "Clicked" : "Click me"} // [!code highlight]
+      </button> // [!code highlight]
+      <h2 className="text-4xl font-semibold mb-2">{weatherData.city}</h2>
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-6xl font-light">{weatherData.temperature}°C</p>
+          <p className="text-xl mt-1">
+            {getWeatherCondition(weatherData.weatherCode)}
+          </p>
+        </div>
+        <div className="ml-8" aria-hidden="true">
+          {getWeatherIcon(weatherData.weatherCode)}
+        </div>
+      </div>
+      <div className="mt-6 flex items-center">
+        <CloudFog size={20} aria-hidden="true" />
+        <span className="ml-2">Humidity: {weatherData.humidity}%</span>
+      </div>
+    </div>
+  );
+}
+```
+
+Now head back to the browser and try clicking the button o nthe weather component. You should see a new message in the chat window which will trigger a subsequent generation!
+
+</Step>
+</Steps>

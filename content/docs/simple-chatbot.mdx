@@ -1,0 +1,228 @@
+---
+title: Building a Chatbot
+---
+
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+
+<Steps>
+<Step>
+
+Define a route handler for streamText in `api/chat/route.ts`. If deploying on Vercel, remember to set the max duration to a value greater than 10s.
+
+```typescript title="app/(5-chatbot)/api/chat/route.ts"
+// Allow streaming responses up to 30 seconds
+export const maxDuration = 30;
+
+export async function POST(req: Request) {}
+```
+</Step>
+
+<Step>
+
+Get the incoming messages from the request body.
+```typescript title="app/(5-chatbot)/api/chat/route.ts"
+// Allow streaming responses up to 30 seconds
+export const maxDuration = 30;
+
+export async function POST(req: Request) {
+  const { messages } = await req.json(); // [!code highlight]
+}
+```
+</Step>
+
+<Step>
+
+Call `streamText` passing in your model and messages.
+```typescript title="app/(5-chatbot)/api/chat/route.ts"
+import { openai } from '@ai-sdk/openai';
+import { streamText, convertToCoreMessages } from 'ai';
+
+// Allow streaming responses up to 30 seconds
+export const maxDuration = 30;
+
+export async function POST(req: Request) {
+  const { messages } = await req.json();
+
+  const result = streamText({ // [!code highlight]
+    model: openai('gpt-4o'), // [!code highlight]
+    messages, // [!code highlight]
+  }); // [!code highlight]
+}
+```
+</Step>
+
+<Step>
+
+Return the resulting generating as a streaming response.
+```typescript title="app/(5-chatbot)/api/chat/route.ts"
+import { openai } from '@ai-sdk/openai';
+import { streamText, convertToCoreMessages } from 'ai';
+
+// Allow streaming responses up to 30 seconds
+export const maxDuration = 30;
+
+export async function POST(req: Request) {
+  const { messages } = await req.json();
+
+  const result = streamText({
+    model: openai('gpt-4o'),
+    messages,
+  });
+
+  return result.toDataStreamResponse(); // [!code highlight]
+}
+```
+</Step>
+
+<Step>
+
+Import the `useChat` hook from `ai/react` and use it in your `chat.tsx` file.
+```tsx title="app/(5-chatbot)/chat/page.tsx"
+'use client'; // [!code highlight]
+
+import { useChat } from 'ai/react'; // [!code highlight]
+
+export default function Chat() {
+  const {} = useChat(); // [!code highlight]
+  return <div>Chatbot</div>;
+}
+```
+</Step>
+<Step>
+
+Destructure `messages` and map over them to display the chat messages.
+```tsx title="app/(5-chatbot)/chat/page.tsx"
+'use client';
+
+import { useChat } from 'ai/react';
+
+export default function Chat() {
+  const { messages } = useChat(); // [!code highlight]
+  return (
+    <div className="flex flex-col w-full max-w-md py-24 mx-auto stretch"> // [!code highlight]
+      {messages.map(m => ( // [!code highlight]
+        <div key={m.id} className="whitespace-pre-wrap"> // [!code highlight]
+          {m.role === 'user' ? 'User: ' : 'AI: '} // [!code highlight]
+          {m.content} // [!code highlight]
+        </div> // [!code highlight]
+      ))} // [!code highlight]
+    </div> // [!code highlight]
+  );
+}
+```
+</Step>
+<Step>
+
+Destructure `input`, `handleInputChange`, and `handleSubmit` from the `useChat` hook. Add an input field and a form to submit messages.
+```tsx title="app/(5-chatbot)/chat/page.tsx"
+'use client';
+
+import { useChat } from 'ai/react';
+
+export default function Chat() {
+  const { messages, input, handleInputChange, handleSubmit } = useChat(); // [!code highlight]
+  return (
+    <div className="flex flex-col w-full max-w-md py-24 mx-auto stretch">
+      {messages.map(m => (
+        <div key={m.id} className="whitespace-pre-wrap">
+          {m.role === 'user' ? 'User: ' : 'AI: '}
+          {m.content}
+        </div>
+      ))}
+
+      <form onSubmit={handleSubmit}> // [!code highlight]
+        <input // [!code highlight]
+          className="fixed bottom-0 w-full max-w-md p-2 mb-8 border border-gray-300 rounded shadow-xl" // [!code highlight]
+          value={input} // [!code highlight]
+          placeholder="Say something..." // [!code highlight]
+          onChange={handleInputChange} // [!code highlight]
+        /> // [!code highlight]
+      </form> // [!code highlight]
+    </div>
+  );
+}
+```
+</Step>
+<Step>
+
+Run the app and navigate to `/chat` to see the chatbot in action.
+```bash
+pnpm run dev
+```
+
+</Step>
+<Step>
+
+Head back to your `api/chat/route.ts` file and add a system prompt to change how the model responds.
+```typescript title="app/(5-chatbot)/api/chat/route.ts"
+import { openai } from '@ai-sdk/openai';
+import { streamText, convertToCoreMessages } from 'ai';
+
+// Allow streaming responses up to 30 seconds
+export const maxDuration = 30;
+
+export async function POST(req: Request) {
+  const { messages } = await req.json();
+
+  const result = streamText({
+    model: openai('gpt-4o'),
+    system: 'You are an unhelpful assistant that only responds to users with confusing riddles.', // [!code highlight]
+    messages,
+  });
+
+  return result.toDataStreamResponse();
+}
+```
+</Step>
+
+Head back to the browser and ask a new question to see the new response. Notice we've completely changed the behavior of the model without changing the model itself.
+
+<Step>
+
+Last one! Change the system prompt to anything you would like. I suggest some kind of pop culture reference.
+```typescript title="app/(5-chatbot)/api/chat/route.ts"
+import { openai } from '@ai-sdk/openai';
+import { streamText, convertToCoreMessages } from 'ai';
+
+// Allow streaming responses up to 30 seconds
+export const maxDuration = 30;
+
+export async function POST(req: Request) {
+  const { messages } = await req.json();
+
+  const result = streamText({
+    model: openai('gpt-4o'),
+    system: `You are Steve Jobs. Assume his character, both strengths and flaws. // [!code highlight]
+    Respond exactly how he would, in exactly his tone. // [!code highlight]
+    It is 1984 you have just created the Macintosh.`, // [!code highlight]
+    messages,
+  });
+
+  return result.toDataStreamResponse();
+}
+```
+
+</Step>
+
+<Step>
+
+Now ask a question like:
+```txt
+What do you think of Bill?
+```
+
+Notice the response is eerily similar to what Steve Jobs might say. This is the power of system prompts.
+
+</Step>
+
+<Step>
+Finally, try asking about the current weather in SF.
+```txt
+What's the weather like in San Francisco?
+```
+Notice it can't respond, we can fix this with tools.
+</Step>
+
+</Steps>
+

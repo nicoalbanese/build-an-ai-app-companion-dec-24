@@ -1,0 +1,56 @@
+---
+title: Adding Multiple Steps
+---
+
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+
+The model now has the ability to call tools to get the necessary information to answer a query. However, the model doesn't answer the users question after it gets the information. Why is that?
+
+Well, the model has techincally completed it's generation as it generated a tool call. In order to get the model to answer the user's question, we need feed the results back to the model alongside the original question. We can do this by configuring the maximum number of steps the model can take. By default maxSteps is set to 1.
+<Steps>
+
+<Step>
+
+Update your `page.tsx` to add multiple steps to the chatbot
+```tsx title="app/(5-chatbot)/chat/page.tsx"
+'use client';
+
+import { useChat } from 'ai/react';
+
+export default function Chat() {
+  const { messages, input, handleInputChange, handleSubmit } = useChat({
+    maxSteps: 5, // [!code highlight]
+  });
+  return (
+    <div className="flex flex-col w-full max-w-md py-24 mx-auto stretch">
+      {messages.map(m => (
+        <div key={m.id} className="whitespace-pre-wrap">
+          {m.role === 'user' ? 'User: ' : 'AI: '}
+          {m.toolInvocations ? (
+            <pre>{JSON.stringify(m.toolInvocations, null, 2)}</pre>
+          ) : (
+            <p>{m.content}</p>
+          )}
+        </div>
+      ))}
+
+      <form onSubmit={handleSubmit}>
+        <input
+          className="fixed bottom-0 w-full max-w-md p-2 mb-8 border border-gray-300 rounded shadow-xl"
+          value={input}
+          placeholder="Say something..."
+          onChange={handleInputChange}
+        />
+      </form>
+    </div>
+  );
+}
+```
+
+</Step>
+<Step>
+
+Head back to the browser and ask for the weather again. Notice that the model now answers the user's question after it gets the relevant information.
+</Step>
+</Steps>

@@ -1,0 +1,68 @@
+---
+title: Project Setup
+---
+
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+import { Keys } from "@/components/keys";
+
+In this session, we'll be exploring the fundamentals of the Vercel AI SDK.
+
+Let's start by setting up our project.
+
+<Steps>
+<Step>
+Clone the following repository locally.
+
+```bash
+git clone https://github.com/nicoalbanese/next-conf-24-starter.git
+cd next-conf-24-starter
+```
+</Step>
+
+<Step>
+Install packages using your preferred package manager.
+
+<Tabs groupId="install" items={['npm', 'pnpm']} persist>
+  <Tab value="npm">
+  ```bash
+  npm install
+  ```
+  </Tab>
+  <Tab value="pnpm">
+  ```bash
+  pnpm install
+  ```
+  </Tab>
+</Tabs>
+</Step>
+<Step>
+Copy the `.env.example` and rename it to `.env`.
+```bash
+cp .env.example .env
+```
+</Step>
+<Step>
+Add your OpenAI API Key to your `.env` file.
+
+<Keys session="openai" />
+
+</Step>
+<Step>
+Run the following command in your terminal.
+<Tabs groupId="install" items={['npm', 'pnpm']} persist>
+  <Tab value="npm">
+  ```bash
+  npx tsx env-check.ts
+  ```
+  </Tab>
+  <Tab value="pnpm">
+  ```bash
+  pnpm tsx env-check.ts
+  ```
+  </Tab>
+</Tabs>
+You should see your OpenAI API Key outputted to the terminal.
+</Step>
+</Steps>
+Great! You are now ready to go!

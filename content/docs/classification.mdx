@@ -1,0 +1,308 @@
+---
+title: Classification
+---
+
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+
+In this project, we want to pass the model a number of support requests and ask it to classify those requests into categories.
+<Steps>
+<Step>
+Open `app/(2-classification)/classification.ts`, you should see the following code:
+```typescript title="app/(2-classification)/classification.ts"
+import "dotenv/config";
+import supportRequests from "./support_requests.json";
+
+async function main() {
+  console.log(supportRequests.slice(0, 2));
+}
+
+main().catch(console.error);
+```
+</Step>
+
+<Step>
+
+Import and call `generateText` like before. Prompt the model to classify the support requests (which are passed in as a JSON object).
+```typescript title="app/(2-classification)/classification.ts"
+import "dotenv/config";
+import supportRequests from "./support_requests.json";
+import { generateText } from "ai"; // [!code highlight]
+import { openai } from "@ai-sdk/openai"; // [!code highlight]
+
+async function main() {
+  const result = await generateText({ // [!code highlight]
+    model: openai("gpt-4o-mini"), // [!code highlight]
+    prompt: // [!code highlight]
+      "Classify the following support requests. The categories are (billing, product issues, enterprise sales, account issues, product feedback).\n\n" + // [!code highlight]
+      JSON.stringify(supportRequests), // [!code highlight]
+  }); // [!code highlight]
+  console.log(result.text); // [!code highlight]
+}
+
+main().catch(console.error);
+```
+</Step>
+
+<Step>
+
+Run the script
+```bash
+pnpm classification
+```
+Response:
+```txt
+Here are the classified support requests:
+
+1. **Account Issues**: "I'm having trouble logging into my account. Can you please assist?" (id: 1)
+2. **Product Issues**: "The export feature isn't working correctly. Is there a known issue?" (id: 2)
+3. **Enterprise Sales**: "Can you provide more information about your enterprise pricing plans?" (id: 4)
+4. **Account Issues**: "I'm having trouble cancelling my account. Please can you help?" (id: 5)
+5. **Product Issues**: "The dashboard is not displaying real-time data. How can I fix this?" (id: 6)
+6. **Product Feedback**: "Do you offer technical support for self-hosted installations?" (id: 7)
+
+(Note: The request about API integration (id: 3) was not classified as it does not fit neatly into the provided categories.)
+```
+Notice how the model is able to classify the support requests into the correct categories. This is great, but generating a big plain text chunk isn't super useful. Notice, the model also generates extraneous information like "Here are the classified support requests:" and "(Note: The request about API integration (id: 3) was not classified as it does not fit neatly into the provided categories.)". We can solve this with the `generateObject` function.
+</Step>
+
+<Step>
+
+Update to use `generateObject` instead of `generateText`
+```typescript title="app/(2-classification)/classification.ts"
+import "dotenv/config";
+import { generateObject } from "ai"; // [!code highlight]
+import { openai } from "@ai-sdk/openai";
+import supportRequests from "./support_requests.json";
+
+async function main() {
+  const result = await generateObject({ // [!code highlight]
+    model: openai("gpt-4o-mini"),
+    prompt:
+      "Classify the following support requests. The categories are (billing, product issues, enterprise sales, account issues, product feedback).\n\n" +
+      JSON.stringify(supportRequests),
+  });
+  console.log(result.object); // [!code highlight]
+}
+
+main().catch(console.error);
+```
+</Step>
+
+<Step>
+
+Define a schema for the output and set the output mode to "array".
+```typescript title="app/(2-classification)/classification.ts"
+import "dotenv/config";
+import { generateObject } from "ai";
+import { openai } from "@ai-sdk/openai";
+import supportRequests from "./support_requests.json";
+import { z } from "zod";
+
+async function main() {
+  const result = await generateObject({
+    model: openai("gpt-4o-mini"),
+    prompt:
+      "Classify the following support requests.\n\n" + // [!code highlight]
+      JSON.stringify(supportRequests),
+    schema: z.object({ // [!code highlight]
+      request: z.string(), // [!code highlight]
+      category: z.enum([ // [!code highlight]
+        "billing", // [!code highlight]
+        "product_issues", // [!code highlight]
+        "enterprise_sales", // [!code highlight]
+        "account_issues", // [!code highlight]
+        "product_feedback", // [!code highlight]
+      ]), // [!code highlight]
+    }), // [!code highlight]
+  });
+  console.log(result.object);
+}
+
+main().catch(console.error);
+```
+
+</Step>
+<Step>
+
+Set the output mode to "array". This will instruct the model to generate an array of objects that match the schema we defined.
+Define a schema for the output and set the output mode to "array".
+```typescript title="app/(2-classification)/classification.ts"
+import "dotenv/config";
+import { generateObject } from "ai";
+import { openai } from "@ai-sdk/openai";
+import supportRequests from "./support_requests.json";
+import { z } from "zod";
+
+async function main() {
+  const result = await generateObject({
+    model: openai("gpt-4o-mini"),
+    prompt:
+      "Classify the following support requests.\n\n" +
+      JSON.stringify(supportRequests),
+    schema: z.object({
+      request: z.string(),
+      category: z.enum([
+        "billing",
+        "product_issues",
+        "enterprise_sales",
+        "account_issues",
+        "product_feedback",
+      ]),
+    }),
+    output: "array", // [!code highlight]
+  });
+  console.log(result.object);
+}
+
+main().catch(console.error);
+```
+
+
+Now the output is nicely constrained to the exact format we specified.
+```bash
+[
+  {
+    request: "I'm having trouble logging into my account. Can you please assist?",
+    category: 'account_issues'
+  },
+  {
+    request: "The export feature isn't working correctly. Is there a known issue?",
+    category: 'product_issues'
+  },
+  {
+    request: 'I need help integrating your API with our existing system.',
+    category: 'product_issues'
+  },
+  {
+    request: 'Can you provide more information about your enterprise pricing plans?',
+    category: 'enterprise_sales'
+  },
+  {
+    request: "I'm having trouble cancelling my account. Please can you help?",
+    category: 'account_issues'
+  },
+  {
+    request: 'The dashboard is not displaying real-time data. How can I fix this?',
+    category: 'product_issues'
+  },
+  {
+    request: 'Do you offer technical support for self-hosted installations?',
+    category: 'product_issues'
+  }
+]
+```
+</Step>
+
+<Step>
+
+Update the schema to estimate the urgency of the request
+```typescript title="app/(2-classification)/classification.ts"
+import "dotenv/config";
+import { generateObject } from "ai";
+import { openai } from "@ai-sdk/openai";
+import supportRequests from "./support_requests.json";
+import { z } from "zod";
+
+async function main() {
+  const result = await generateObject({
+    model: openai("gpt-4o-mini"),
+    prompt:
+      "Classify the following support requests.\n\n" +
+      JSON.stringify(supportRequests),
+    schema: z.object({
+      request: z.string(),
+      category: z.enum([
+        "billing",
+        "product_issues",
+        "enterprise_sales",
+        "account_issues",
+        "product_feedback",
+      ]),
+      urgency: z.enum(["low", "medium", "high"]), // [!code highlight]
+    }),
+    output: "array",
+  });
+  console.log(result.object);
+}
+
+main().catch(console.error);
+```
+
+This is super powerful. A lot of these models are multi-lingual too, so we could pass in support requests in different languages and the model would still be able to classify them. This is a great example of how we can use AI to automate a task that would otherwise be very time-consuming.
+</Step>
+
+<Step>
+
+Update the import to use the multi-lingual support requests. Add a language field to the schema too.
+```typescript title="app/(2-classification)/classification.ts"
+import "dotenv/config";
+import { generateObject } from "ai";
+import { openai } from "@ai-sdk/openai";
+import supportRequests from "./support_requests_multilanguage.json"; // [!code highlight]
+import { z } from "zod";
+
+async function main() {
+  const result = await generateObject({
+    model: openai("gpt-4o-mini"),
+    prompt:
+      "Classify the following support requests.\n\n" +
+      JSON.stringify(supportRequests),
+    schema: z.object({
+      request: z.string(),
+      category: z.enum([
+        "billing",
+        "product_issues",
+        "enterprise_sales",
+        "account_issues",
+        "product_feedback",
+      ]),
+      urgency: z.enum(["low", "medium", "high"]),
+      language: z.string(), // [!code highlight]
+    }),
+    output: "array",
+  });
+  console.log(result.object);
+}
+
+main().catch(console.error);
+```
+</Step>
+
+<Step>
+
+Note that the model is identifying the language correctly, but it's returning the language as a country code rather than the full name. Note: you can also use the `describe` method to give the model more information about what you want it to generate.
+```typescript title="app/(2-classification)/classification.ts"
+import "dotenv/config";
+import { generateObject } from "ai";
+import { openai } from "@ai-sdk/openai";
+import supportRequests from "./support_requests_multilanguage.json";
+import { z } from "zod";
+
+async function main() {
+  const result = await generateObject({
+    model: openai("gpt-4o-mini"),
+    prompt:
+      "Classify the following support requests.\n\n" +
+      JSON.stringify(supportRequests),
+    schema: z.object({
+      request: z.string(),
+      category: z.enum([
+        "billing",
+        "product_issues",
+        "enterprise_sales",
+        "account_issues",
+        "product_feedback",
+      ]),
+      urgency: z.enum(["low", "medium", "high"]),
+      language: z.string().describe("The language the support request is in. eg. English, Spanish etc."), // [!code highlight]
+    }),
+    output: "array",
+  });
+  console.log(result.object);
+}
+
+main().catch(console.error);
+```
+</Step>
+</Steps>

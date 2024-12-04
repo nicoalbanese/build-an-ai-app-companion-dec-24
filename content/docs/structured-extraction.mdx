@@ -1,0 +1,305 @@
+---
+title: Structured Extraction
+---
+
+import { Step, Steps } from "fumadocs-ui/components/steps";
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+
+Run the dev server and navigate to the `/extraction` route:
+
+```bash
+pnpm run dev
+```
+
+You should see an input field where you can enter unstructured text about an appointment. Let's build a system to extract structured information from this input using the `generateObject` function.
+
+<Steps>
+<Step>
+Create a new file called `actions.ts` in the `extraction` directory. In it, define a new server action called `extractAppointment`. This action will take in one argument, `input`, which is a string. Import and call `generateObject` and return the resulting object generation.
+
+```typescript title="app/(4-extraction)/extraction/actions.ts"
+"use server";
+
+import { generateObject } from "ai";
+
+export const extractAppointment = async (input: string) => {
+  const result = await generateObject();
+  return result.object;
+};
+```
+
+</Step>
+
+<Step>
+Pass in a model and a prompt. In this case, we want the model to extract appointment information from the input text. We'll use the `gpt-4o-mini` model for this task.
+
+```typescript title="app/(4-extraction)/extraction/actions.ts"
+"use server";
+
+import { generateObject } from "ai";
+import { openai } from "@ai-sdk/openai";
+import { z } from "zod";
+
+export const extractAppointment = async (input: string) => {
+  const result = await generateObject({
+    model: openai("gpt-4o-mini"), // [!code highlight]
+    prompt: "Extract appointment info for the following input: " + input, // [!code highlight]
+  });
+  return result.object;
+};
+```
+
+</Step>
+
+<Step>
+Now, let's define a schema for the exact information we want to extract.
+
+```typescript title="app/(4-extraction)/extraction/actions.ts"
+"use server";
+
+import { generateObject } from "ai";
+import { openai } from "@ai-sdk/openai";
+import { z } from "zod";
+
+export const extractAppointment = async (input: string) => {
+  const result = await generateObject({
+    model: openai("gpt-4o-mini"),
+    prompt: "Extract appointment info for the following input: " + input,
+    schema: z.object({ // [!code highlight]
+      title: z.string(), // [!code highlight]
+      startTime: z.string().nullable(), // [!code highlight]
+      endTime: z.string().nullable(), // [!code highlight]
+      attendees: z.array(z.string()).nullable(), // [!code highlight]
+      location: z.string().nullable(), // [!code highlight]
+      date: z.string(), // [!code highlight]
+    }), // [!code highlight]
+  });
+  return result.object;
+};
+```
+
+</Step>
+
+
+<Step>
+Import the `CalendarAppointment` type and create a new state variable to store the extracted appointment details.
+
+```tsx title="app/(4-extraction)/extraction/page.tsx"
+"use client";
+
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { AppointmentDetails, CalendarAppointment } from "./calendar-appointment"; // [!code highlight]
+
+export default function Page() {
+  const [loading, setLoading] = useState(false);
+  const [appointment, setAppointment] = // [!code highlight]
+    useState<AppointmentDetails | null>(null);  // [!code highlight]
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setLoading(true);
+    // extract appointment
+    setLoading(false);
+  };
+
+  return (
+    <div className="max-w-lg mx-auto px-4 py-8">
+      <div className="flex flex-col gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Extract Appointment</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <Input
+                name="appointment"
+                placeholder="Enter appointment details..."
+                className="w-full"
+              />
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? "Extracting..." : "Extract Appointment"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+        <CalendarAppointment appointment={null} />
+      </div>
+    </div>
+  );
+}
+```
+
+</Step>
+
+<Step>
+Import the newly created `extractAppointment` action and call it. Pass in the input value from the form and update the extracted appointment state with the awaited resulting value.
+
+```tsx title="app/(4-extraction)/extraction/page.tsx"
+"use client";
+
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { AppointmentDetails, CalendarAppointment } from "./calendar-appointment";
+import { extractAppointment } from "./actions";
+
+export default function Page() {
+  const [loading, setLoading] = useState(false);
+  const [appointment, setAppointment] =
+    useState<AppointmentDetails | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setLoading(true);
+    const formData = new FormData(e.target as HTMLFormElement); // [!code highlight]
+    const input = formData.get("appointment") as string; // [!code highlight]
+    setAppointment(await extractAppointment(input)); // [!code highlight]
+    setLoading(false);
+  };
+
+  return (
+    <div className="max-w-lg mx-auto px-4 py-8">
+      <div className="flex flex-col gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Extract Appointment</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <Input
+                name="appointment"
+                placeholder="Enter appointment details..."
+                className="w-full"
+              />
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? "Extracting..." : "Extract Appointment"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+        <CalendarAppointment appointment={null} />
+      </div>
+    </div>
+  );
+}
+```
+
+</Step>
+
+<Step>
+Pass the appointment to the `CalendarAppointment` component as props.
+
+```tsx title="app/(4-extraction)/extraction/page.tsx"
+"use client";
+
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { AppointmentDetails, CalendarAppointment } from "./calendar-appointment";
+import { extractAppointment } from "./actions";
+
+export default function Page() {
+  const [loading, setLoading] = useState(false);
+  const [appointment, setAppointment] =
+    useState<AppointmentDetails | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setLoading(true);
+    const formData = new FormData(e.target as HTMLFormElement);
+    const input = formData.get("appointment") as string;
+    setAppointment(await extractAppointment(input));
+    setLoading(false);
+  };
+
+  return (
+    <div className="max-w-lg mx-auto px-4 py-8">
+      <div className="flex flex-col gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Extract Appointment</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <Input
+                name="appointment"
+                placeholder="Enter appointment details..."
+                className="w-full"
+              />
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? "Extracting..." : "Extract Appointment"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+        <CalendarAppointment appointment={appointment} /> // [!code highlight]
+      </div>
+    </div>
+  );
+}
+```
+
+</Step>
+
+
+
+<Step>
+Test the extraction functionality:
+
+1. Run the dev server if it's not already running:
+   ```bash
+   pnpm run dev
+   ```
+2. Navigate to the `/extraction` route in your browser.
+3. Enter an unstructured appointment text in the input field, such as:
+```txt
+Meeting with Guillermo Rauch about Next Conf Keynote Practice tomorrow at 2pm at Vercel HQ
+```
+4. Click the "Submit" button and observe the structured appointment details being displayed.
+
+You should now see the extracted appointment information rendered in a structured format using the `CalendarAppointment` component.
+
+But notice that the date and time format isn't great. And the appointment name isn't perfect either. Let's add some Zod descriptions to clarify the expected format of the extracted fields.
+
+</Step>
+
+<Step>
+Update the `action.ts` file with descriptions for the extracted fields:
+
+```typescript title="app/(4-extraction)/extraction/actions.ts"
+"use server";
+
+import { generateObject } from "ai";
+import { openai } from "@ai-sdk/openai";
+import { z } from "zod";
+
+export const extractAppointment = async (input: string) => {
+  const result = await generateObject({
+    model: openai("gpt-4o-mini"),
+    prompt: "Extract appointment info for the following input: " + input,
+    schema: z.object({
+      title: z.string().describe("The title of the event. This should be the main purpose of the event. No need to mention names. Clean up formatting (capitalise)."), // [!code highlight]
+      startTime: z.string().nullable().describe("format HH:MM"), // [!code highlight]
+      endTime: z.string().nullable().describe("format HH:MM - note: default meeting duration is 1 hour"), // [!code highlight]
+      attendees: z.array(z.string()).nullable().describe("comma separated list of attendees"), // [!code highlight]
+      location: z.string().nullable(),
+      date: z.string().describe("Today's date is: " + new Date().toISOString().split("T")[0]), // [!code highlight]
+    }),
+  });
+  return result.object;
+};
+```
+
+Try the following input again and see the improvement in the output.
+```txt
+Meeting with Guillermo Rauch about Next Conf Keynote Practice tomorrow at 2pm at Vercel HQ
+```
+
+</Step>
+
+</Steps>

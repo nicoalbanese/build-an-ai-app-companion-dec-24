@@ -1,0 +1,159 @@
+---
+title: Extraction
+---
+
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+
+<Steps>
+
+<Step>
+
+Import `generateText` from AI SDK and call it.
+```typescript title="app/(1-extraction)/extraction.ts"
+import "dotenv/config";
+import fs from "fs";
+import { generateText } from "ai"; // [!code highlight]
+
+// import essay
+const essay = fs.readFileSync("app/(1-extraction)/essay.txt", "utf-8");
+
+async function main() {
+  const result = await generateText({}); // [!code highlight]
+}
+
+main().catch(console.error);
+```
+
+</Step>
+
+<Step>
+
+Import the OpenAI provider and define your model.
+```typescript title="app/(1-extraction)/extraction.ts"
+import "dotenv/config";
+import fs from "fs";
+import { generateText } from "ai";
+import { openai } from "@ai-sdk/openai"; // [!code highlight]
+
+// import essay
+const essay = fs.readFileSync("app/(1-extraction)/essay.txt", "utf-8");
+
+async function main() {
+  const result = await generateText({
+    model: openai("gpt-4o-mini"), // [!code highlight]
+  });
+}
+
+main().catch(console.error);
+```
+</Step>
+
+<Step>
+
+Pass in a prompt. In this case, we want to extract all the names mentioned in the essay.
+```typescript title="app/(1-extraction)/extraction.ts"
+import "dotenv/config";
+import fs from "fs";
+import { generateText } from "ai";
+import { openai } from "@ai-sdk/openai";
+
+// import essay
+const essay = fs.readFileSync("app/(1-extraction)/essay.txt", "utf-8");
+
+async function main() {
+  const result = await generateText({
+    model: openai("gpt-4o-mini"),
+    prompt: "Extract all the names mentioned in this essay." + "\n\n" + essay, // [!code highlight]
+  });
+}
+
+main().catch(console.error);
+```
+</Step>
+
+<Step>
+
+Now, let's log the resulting text generation to the console.
+```typescript title="app/(1-extraction)/extraction.ts"
+import "dotenv/config";
+import fs from "fs";
+import { generateText } from "ai";
+import { openai } from "@ai-sdk/openai";
+
+// import essay
+const essay = fs.readFileSync("app/(1-extraction)/essay.txt", "utf-8");
+
+async function main() {
+  const result = await generateText({
+    model: openai("gpt-4o-mini"),
+    prompt: "Extract all the names mentioned in this essay." + "\n\n" + essay,
+  });
+
+  console.log(result.text); // [!code highlight]
+}
+
+main().catch(console.error);
+```
+</Step>
+
+<Step>
+Run the script
+```bash
+pnpm extraction
+```
+</Step>
+
+<Step>
+
+Play around with the prompt to ask for different things like, "What is the key takeaway of this piece in 50 words?"
+```typescript title="app/(1-extraction)/extraction.ts"
+import "dotenv/config";
+import fs from "fs";
+import { generateText } from "ai";
+import { openai } from "@ai-sdk/openai";
+
+// import essay
+const essay = fs.readFileSync("app/(1-extraction)/essay.txt", "utf-8");
+
+async function main() {
+  const result = await generateText({
+    model: openai("gpt-4o-mini"),
+    prompt: "What is the key takeaway of this piece in 50 words?" + "\n\n" + essay, // [!code highlight]
+  });
+
+  console.log(result.text);
+}
+
+main().catch(console.error);
+```
+</Step>
+
+<Step>
+
+Play around with a different model to see how the response changes.
+```typescript
+import "dotenv/config";
+import fs from "fs";
+import { generateText } from "ai";
+import { openai } from "@ai-sdk/openai";
+
+// import essay
+const essay = fs.readFileSync("app/(1-extraction)/essay.txt", "utf-8");
+
+async function main() {
+  const result = await generateText({
+    model: openai("gpt-4o"), // [!code highlight]
+    prompt: "What is the key takeaway of this piece in 50 words?" + "\n\n" + essay,
+  });
+
+  console.log(result.text);
+}
+
+main().catch(console.error);
+```
+</Step>
+
+</Steps>
+
+Keep playing around with the prompt. Ask for different things and see how the model responds. You can also try different models to see how the response changes.

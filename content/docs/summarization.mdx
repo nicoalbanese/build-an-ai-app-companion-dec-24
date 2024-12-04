@@ -1,0 +1,260 @@
+---
+title: Summarization
+---
+
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+
+
+Run the dev server and navigate to the `/summarization` route:
+```bash
+pnpm run dev
+```
+You should see a list of comments. This list is populated with data from `messages.json`, containing 20 messages from team members discussing project updates, client feedback, timelines, and preparation for an upcoming client call.
+
+Wouldn't it be great to get a summary of all the comments so we didn't have to read through everything. Let's build this with the `generateObject` function.
+
+<Steps>
+<Step>
+Create a new file called `actions.ts` in the `summarization` directory. This will be our server-side environment where we will interact with the model. This action will take in an array of comments.
+
+```typescript title="app/(3-summarization)/summarization/actions.ts"
+"use server";
+
+import { generateObject } from "ai";
+
+export const generateSummary = async (comments: any[]) => {
+  const result = await generateObject();
+  return result.object;
+};
+```
+</Step>
+
+<Step>
+Pass in a model and a prompt. In this case, we want the model to summarize the comments, which we will stringify and pass alongside the prompt.
+
+```typescript title="app/(3-summarization)/summarization/actions.ts"
+"use server";
+
+import { generateObject } from "ai";
+import { openai } from "@ai-sdk/openai";
+import { z } from "zod";
+
+export const generateSummary = async (comments: any[]) => {
+  const result = await generateObject({
+    model: openai("gpt-4o"), // [!code highlight]
+    prompt: `Please summarise the following comments. // [!code highlight]
+    --- // [!code highlight]
+    Comments: // [!code highlight]
+    ${JSON.stringify(comments)}` // [!code highlight]
+  }); // [!code highlight]
+  return result.object;
+};
+```
+</Step>
+
+
+<Step>
+Let's define a Zod schema for the information that we want the model to generate.
+
+```typescript title="app/(3-summarization)/summarization/actions.ts"
+"use server";
+
+import { generateObject } from "ai";
+import { openai } from "@ai-sdk/openai";
+import { z } from "zod";
+
+export const generateSummary = async (comments: any[]) => {
+  const result = await generateObject({
+    model: openai("gpt-4o"),
+    prompt: `Please summarise the following comments.
+    ---
+    Comments:
+    ${JSON.stringify(comments)}`,
+    schema: z.object({ // [!code highlight]
+      headline: z.string(), // [!code highlight]
+      context: z.string(), // [!code highlight]
+      discussionPoints: z.string(), // [!code highlight]
+      takeaways: z.string(), // [!code highlight]
+    }), // [!code highlight]
+  });
+  return result.object;
+};
+```
+</Step>
+
+
+<Step>
+
+Import the newly created Server Action. Create a new state variable to hold the comment summary.
+Update the `page.tsx` with the following code:
+```tsx title="app/(3-summarization)/summarization/page.tsx"
+"use client";
+
+import { MessageList } from "./message-list";
+import { Button } from "@/components/ui/button";
+import messages from "./messages.json";
+import { generateSummary } from "./actions"; // [!code highlight]
+import { useState } from "react";
+
+export default function Home() {
+  const [summary, setSummary] = useState<Awaited< // [!code highlight]
+    ReturnType<typeof generateSummary> // [!code highlight]
+  > | null>(null); // [!code highlight]
+  const [loading, setLoading] = useState(false);
+  return (
+    <main className="mx-auto max-w-2xl pt-8">
+      <div className="flex space-x-4 items-center mb-2">
+        <h3 className="font-bold">Comments</h3>
+        <Button
+          variant={"secondary"}
+          disabled={loading}
+          onClick={async () => {
+            setLoading(true);
+            // generate summary
+            setLoading(false);
+          }}
+        >
+          Summar{loading ? "izing..." : "ize"}
+        </Button>
+      </div>
+      <MessageList messages={messages} />
+    </main>
+  );
+}
+```
+</Step>
+<Step>
+
+Call the `generateSummary` function and set the result to the `summary` state variable.
+
+```tsx title="app/(3-summarization)/summarization/page.tsx"
+"use client";
+
+import { MessageList } from "./message-list";
+import { Button } from "@/components/ui/button";
+import messages from "./messages.json";
+import { generateSummary } from "./actions";
+import { useState } from "react";
+
+export default function Home() {
+  const [summary, setSummary] = useState<Awaited<
+    ReturnType<typeof generateSummary>
+  > | null>(null);
+  const [loading, setLoading] = useState(false);
+  return (
+    <main className="mx-auto max-w-2xl pt-8">
+      <div className="flex space-x-4 items-center mb-2">
+        <h3 className="font-bold">Comments</h3>
+        <Button
+          variant={"secondary"}
+          disabled={loading}
+          onClick={async () => {
+            setLoading(true);
+            // generate summary
+            setSummary(await generateSummary(messages)); // [!code highlight]
+            setLoading(false);
+          }}
+        >
+          Summar{loading ? "izing..." : "ize"}
+        </Button>
+      </div>
+      <MessageList messages={messages} />
+    </main>
+  );
+}
+```
+</Step>
+
+<Step>
+
+Import the SummaryCard component and render the summary.
+
+```tsx title="app/(3-summarization)/summarization/page.tsx"
+"use client";
+
+import { MessageList } from "./message-list";
+import { Button } from "@/components/ui/button";
+import messages from "./messages.json";
+import { generateSummary } from "./actions";
+import { useState } from "react";
+import { SummaryCard } from "./summary-card"; // [!code highlight]
+
+export default function Home() {
+  const [summary, setSummary] = useState<Awaited<
+    ReturnType<typeof generateSummary>
+  > | null>(null);
+  const [loading, setLoading] = useState(false);
+  return (
+    <main className="mx-auto max-w-2xl pt-8">
+      <div className="flex space-x-4 items-center mb-2">
+        <h3 className="font-bold">Comments</h3>
+        <Button
+          variant={"secondary"}
+          disabled={loading}
+          onClick={async () => {
+            setLoading(true);
+            // generate summary
+            setSummary(await generateSummary(messages));
+            setLoading(false);
+          }}
+        >
+          Summar{loading ? "izing..." : "ize"}
+        </Button>
+      </div>
+      {summary && <SummaryCard {...summary} />} // [!code highlight]
+      <MessageList messages={messages} />
+    </main>
+  );
+}
+```
+
+Head back to the browser and click generate! You should see a summary of the comments. This is great. But the format of the text isn't great. Let's use the describe function to improve the generation.
+</Step>
+
+<Step>
+
+Update the `actions.ts` file with the following code:
+```typescript title="app/(3-summarization)/summarization/action.ts"
+"use server";
+
+import { generateObject } from "ai";
+import { openai } from "@ai-sdk/openai";
+import { z } from "zod";
+
+export const generateSummary = async (comments: any[]) => {
+  const result = await generateObject({
+    model: openai("gpt-4o"),
+    prompt: `Please summarise the following comments.
+    ---
+    Comments:
+    ${JSON.stringify(comments)}
+`,
+    schema: z.object({
+      headline: z
+        .string()
+        .describe("The headline of the summary. Max 5 words."),
+      context: z
+        .string()
+        .describe(
+          "What is the relevant context that prompted discussion. Max 2 sentences.",
+        ),
+      discussionPoints: z
+        .string()
+        .describe("What are the key discussion points? Max 2 sentences."),
+      takeaways: z
+        .string()
+        .describe(
+          "What are the key takeaways / next steps? Include names. Max 2 sentences.",
+        ),
+    }),
+  });
+  return result.object;
+};
+```
+
+In this updated code, we are using the `describe` function to provide more context to the model about the expected output. This will help the model generate more accurate summaries. We are also constraining the output to be within certain character limits to ensure that the output is concise and relevant.
+
+Head back to the browser and click generate! You should see a more structured summary of the comments.
+</Step>
+</Steps>

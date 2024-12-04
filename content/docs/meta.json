@@ -1,0 +1,22 @@
+{
+  "title": "Build an AI App",
+  "root": true,
+  "pages": [
+    "---Introduction---",
+    "index",
+    "...",
+    "---Fundamentals---",
+    "extraction",
+    "classification",
+    "---Invisible AI---",
+    "summarization",
+    "structured-extraction",
+    "---Chat---",
+    "simple-chatbot",
+    "chatbot-with-tools",
+    "multi-step-chatbot",
+    "generative-ui-chatbot",
+    "---Where to Next?---",
+    "next-steps"
+  ]
+}

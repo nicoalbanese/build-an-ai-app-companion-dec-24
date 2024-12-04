@@ -1,0 +1,323 @@
+---
+title: Adding a Tool
+---
+
+import { Step, Steps } from "fumadocs-ui/components/steps";
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+
+<Steps>
+<Step>
+
+Head back to your route handler and define your first tool: `getWeather`. This tool will be used to get the current weather at a location. We will use the `tool` helper from the AI SDK to define the tool.
+
+<Tabs items={ ["Real API", "Fake API"] } groupId="tool-route">
+
+```typescript tab="Real API" title="app/(5-chatbot)/api/chat/route.ts"
+import { openai } from "@ai-sdk/openai";
+import { streamText, convertToCoreMessages, tool } from "ai"; // [!code highlight]
+
+export const maxDuration = 30;
+
+export async function POST(req: Request) {
+  const { messages } = await req.json();
+
+  const result = streamText({
+    model: openai("gpt-4o"),
+    messages,
+    tools: { // [!code highlight]
+      getWeather: tool({}), // [!code highlight]
+    }, // [!code highlight]
+  });
+
+  return result.toDataStreamResponse();
+}
+```
+
+```typescript tab="Fake API" title="app/(5-chatbot)/api/chat/route.ts"
+import { openai } from "@ai-sdk/openai";
+import { streamText, convertToCoreMessages, tool } from "ai"; // [!code highlight]
+
+export const maxDuration = 30;
+
+export async function POST(req: Request) {
+  const { messages } = await req.json();
+
+  const result = streamText({
+    model: openai("gpt-4o"),
+    messages,
+    tools: { // [!code highlight]
+      getWeather: tool({}), // [!code highlight]
+    }, // [!code highlight]
+  });
+
+  return result.toDataStreamResponse();
+}
+```
+
+</Tabs>
+
+</Step>
+<Step>
+
+First, you need to add a description to your tool. This is what the model will use to decide when to use it.
+
+<Tabs items={ ["Real API", "Fake API"] } groupId="tool-route">
+
+```typescript tab="Real API" title="app/(5-chatbot)/api/chat/route.ts"
+import { openai } from "@ai-sdk/openai";
+import { streamText, convertToCoreMessages, tool } from "ai";
+
+export const maxDuration = 30;
+
+export async function POST(req: Request) {
+  const { messages } = await req.json();
+
+  const result = streamText({
+    model: openai("gpt-4o"),
+    messages,
+    tools: {
+      getWeather: tool({
+        description: "Get the current weather at a location", // [!code highlight]
+      }),
+    },
+  });
+
+  return result.toDataStreamResponse();
+}
+```
+
+```typescript tab="Fake API" title="app/(5-chatbot)/api/chat/route.ts"
+import { openai } from "@ai-sdk/openai";
+import { streamText, convertToCoreMessages, tool } from "ai";
+
+export const maxDuration = 30;
+
+export async function POST(req: Request) {
+  const { messages } = await req.json();
+
+  const result = streamText({
+    model: openai("gpt-4o"),
+    messages,
+    tools: {
+      getWeather: tool({
+        description: "Get the current weather at a location", // [!code highlight]
+      }),
+    },
+  });
+
+  return result.toDataStreamResponse();
+}
+```
+
+</Tabs>
+
+</Step>
+<Step>
+
+Now, we have to define the parameters that the tool needs in order to run. We're using Zod to define the schema for the parameters.
+
+<Tabs items={ ["Real API", "Fake API"] } groupId="tool-route">
+
+```typescript tab="Real API" title="app/(5-chatbot)/api/chat/route.ts"
+import { openai } from "@ai-sdk/openai";
+import { streamText, convertToCoreMessages, tool } from "ai";
+import { z } from "zod"; // [!code highlight]
+
+export const maxDuration = 30;
+
+export async function POST(req: Request) {
+  const { messages } = await req.json();
+
+  const result = streamText({
+    model: openai("gpt-4o"),
+    messages,
+    tools: {
+      getWeather: tool({
+        description: "Get the current weather at a location",
+        parameters: z.object({ // [!code highlight]
+          latitude: z.number(), // [!code highlight]
+          longitude: z.number(), // [!code highlight]
+          city: z.string(), // [!code highlight]
+        }), // [!code highlight]
+      }), // [!code highlight]
+    },
+  });
+
+  return result.toDataStreamResponse();
+}
+```
+
+```typescript tab="Fake API" title="app/(5-chatbot)/api/chat/route.ts"
+import { openai } from "@ai-sdk/openai";
+import { streamText, convertToCoreMessages, tool } from "ai";
+import { z } from "zod"; // [!code highlight]
+
+export const maxDuration = 30;
+
+export async function POST(req: Request) {
+  const { messages } = await req.json();
+
+  const result = streamText({
+    model: openai("gpt-4o"),
+    messages,
+    tools: {
+      getWeather: tool({
+        description: "Get the current weather at a location",
+        parameters: z.object({ // [!code highlight]
+          latitude: z.number(), // [!code highlight]
+          longitude: z.number(), // [!code highlight]
+          city: z.string(), // [!code highlight]
+        }), // [!code highlight]
+      }),
+    },
+  });
+
+  return result.toDataStreamResponse();
+}
+```
+
+</Tabs>
+
+We can use the model's generative abilities to define parameters that can be inferred from the conversation. In this case, we will need the latitude, longitude, and city of the location we want to get the weather for. We expect the user will provide the city name, and the model can generate the latitude and longitude from that.
+
+</Step>
+
+<Step>
+
+Finally we define an execute function. This is the code that will be run when the tool is called.
+
+<Tabs items={ ["Real API", "Fake API"] } groupId="tool-route">
+
+```typescript tab="Real API" title="app/(5-chatbot)/api/chat/route.ts"
+import { openai } from "@ai-sdk/openai";
+import { streamText, convertToCoreMessages, tool } from "ai";
+import { z } from "zod";
+
+export const maxDuration = 30;
+
+export async function POST(req: Request) {
+  const { messages } = await req.json();
+
+  const result = streamText({
+    model: openai("gpt-4o"),
+    messages,
+    tools: {
+      getWeather: tool({
+        description: "Get the current weather at a location",
+        parameters: z.object({
+          latitude: z.number(),
+          longitude: z.number(),
+          city: z.string(),
+        }),
+        execute: async ({ latitude, longitude, city }) => { // [!code highlight]
+          const response = await fetch( // [!code highlight]
+            `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weathercode,relativehumidity_2m&timezone=auto`, // [!code highlight]
+          ); // [!code highlight]
+
+          const weatherData = await response.json(); // [!code highlight]
+          return { // [!code highlight]
+            // [!code highlight]
+            temperature: weatherData.current.temperature_2m, // [!code highlight]
+            weatherCode: weatherData.current.weathercode, // [!code highlight]
+            humidity: weatherData.current.relativehumidity_2m, // [!code highlight]
+            city, // [!code highlight]
+          }; // [!code highlight]
+        }, // [!code highlight]
+      }),
+    },
+  });
+
+  return result.toDataStreamResponse();
+}
+```
+
+```typescript tab="Fake API" title="app/(5-chatbot)/api/chat/route.ts"
+import { openai } from "@ai-sdk/openai";
+import { streamText, convertToCoreMessages, tool } from "ai";
+import { z } from "zod";
+
+export const maxDuration = 30;
+
+export async function POST(req: Request) {
+  const { messages } = await req.json();
+
+  const result = streamText({
+    model: openai("gpt-4o"),
+    messages,
+    tools: {
+      getWeather: tool({
+        description: "Get the current weather at a location",
+        parameters: z.object({
+          latitude: z.number(),
+          longitude: z.number(),
+          city: z.string(),
+        }),
+        execute: async ({ latitude, longitude, city }) => { // [!code highlight]
+          const temperature = Math.round(Math.random() * (90 - 32) + 32); // [!code highlight]
+          const humidity = Math.round(Math.random() * (100 - 30) + 30); // [!code highlight]
+          const weatherCode = Math.floor(Math.random() * 50) + 1; // [!code highlight]
+
+          return { // [!code highlight]
+            temperature, // [!code highlight]
+            weatherCode, // [!code highlight]
+            humidity, // [!code highlight]
+            city, // [!code highlight]
+          }; // [!code highlight]
+        }, // [!code highlight]
+      }),
+    },
+  });
+
+  return result.toDataStreamResponse();
+}
+```
+
+</Tabs>
+
+</Step>
+<Step>
+Head back to the terminal and ask for the weather in SF.
+```txt
+What's the weather in San Francisco?
+```
+There's just a blank response... This is because the model generated a tool call rather than a message. Let's render tool calls and results in the UI.
+</Step>
+<Step>
+
+Head back to your page.tsx and add the following code to render tool calls and results.
+```tsx title="app/(5-chatbot)/chat/page.tsx"
+'use client';
+
+import { useChat } from 'ai/react';
+
+export default function Chat() {
+  const { messages, input, handleInputChange, handleSubmit } = useChat();
+  return (
+    <div className="flex flex-col w-full max-w-md py-24 mx-auto stretch">
+      {messages.map(m => (
+        <div key={m.id} className="whitespace-pre-wrap">
+          {m.role === 'user' ? 'User: ' : 'AI: '}
+          {m.toolInvocations ? ( // [!code highlight]
+            <pre>{JSON.stringify(m.toolInvocations, null, 2)}</pre> // [!code highlight]
+          ) : ( // [!code highlight]
+            <p>{m.content}</p> // [!code highlight]
+          )} // [!code highlight]
+        </div>
+      ))}
+
+      <form onSubmit={handleSubmit}>
+        <input
+          className="fixed bottom-0 w-full max-w-md p-2 mb-8 border border-gray-300 rounded shadow-xl"
+          value={input}
+          placeholder="Say something..."
+          onChange={handleInputChange}
+        />
+      </form>
+    </div>
+  );
+}
+```
+Save, jump back to the browser, and if the page hasn't refreshed, you should see the tool result in the UI.
+</Step>
+
+</Steps>
