@@ -14,7 +14,7 @@ Head back to your route handler and define your first tool: `getWeather`. This t
 
 ```typescript tab="Real API" title="app/(5-chatbot)/api/chat/route.ts"
 import { openai } from "@ai-sdk/openai";
-import { streamText, convertToCoreMessages, tool } from "ai"; // [!code highlight]
+import { streamText, tool } from "ai"; // [!code highlight]
 
 export const maxDuration = 30;
 
@@ -35,7 +35,7 @@ export async function POST(req: Request) {
 
 ```typescript tab="Fake API" title="app/(5-chatbot)/api/chat/route.ts"
 import { openai } from "@ai-sdk/openai";
-import { streamText, convertToCoreMessages, tool } from "ai"; // [!code highlight]
+import { streamText, tool } from "ai"; // [!code highlight]
 
 export const maxDuration = 30;
 
@@ -65,7 +65,7 @@ First, you need to add a description to your tool. This is what the model will u
 
 ```typescript tab="Real API" title="app/(5-chatbot)/api/chat/route.ts"
 import { openai } from "@ai-sdk/openai";
-import { streamText, convertToCoreMessages, tool } from "ai";
+import { streamText, tool } from "ai";
 
 export const maxDuration = 30;
 
@@ -88,7 +88,7 @@ export async function POST(req: Request) {
 
 ```typescript tab="Fake API" title="app/(5-chatbot)/api/chat/route.ts"
 import { openai } from "@ai-sdk/openai";
-import { streamText, convertToCoreMessages, tool } from "ai";
+import { streamText, tool } from "ai";
 
 export const maxDuration = 30;
 
@@ -120,7 +120,7 @@ Now, we have to define the parameters that the tool needs in order to run. We're
 
 ```typescript tab="Real API" title="app/(5-chatbot)/api/chat/route.ts"
 import { openai } from "@ai-sdk/openai";
-import { streamText, convertToCoreMessages, tool } from "ai";
+import { streamText, tool } from "ai";
 import { z } from "zod"; // [!code highlight]
 
 export const maxDuration = 30;
@@ -149,7 +149,7 @@ export async function POST(req: Request) {
 
 ```typescript tab="Fake API" title="app/(5-chatbot)/api/chat/route.ts"
 import { openai } from "@ai-sdk/openai";
-import { streamText, convertToCoreMessages, tool } from "ai";
+import { streamText, tool } from "ai";
 import { z } from "zod"; // [!code highlight]
 
 export const maxDuration = 30;
@@ -190,7 +190,7 @@ Finally we define an execute function. This is the code that will be run when th
 
 ```typescript tab="Real API" title="app/(5-chatbot)/api/chat/route.ts"
 import { openai } from "@ai-sdk/openai";
-import { streamText, convertToCoreMessages, tool } from "ai";
+import { streamText, tool } from "ai";
 import { z } from "zod";
 
 export const maxDuration = 30;
@@ -233,7 +233,7 @@ export async function POST(req: Request) {
 
 ```typescript tab="Fake API" title="app/(5-chatbot)/api/chat/route.ts"
 import { openai } from "@ai-sdk/openai";
-import { streamText, convertToCoreMessages, tool } from "ai";
+import { streamText, tool } from "ai";
 import { z } from "zod";
 
 export const maxDuration = 30;

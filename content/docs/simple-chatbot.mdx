@@ -36,7 +36,7 @@ export async function POST(req: Request) {
 Call `streamText` passing in your model and messages.
 ```typescript title="app/(5-chatbot)/api/chat/route.ts"
 import { openai } from '@ai-sdk/openai';
-import { streamText, convertToCoreMessages } from 'ai';
+import { streamText } from 'ai';
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
@@ -57,7 +57,7 @@ export async function POST(req: Request) {
 Return the resulting generating as a streaming response.
 ```typescript title="app/(5-chatbot)/api/chat/route.ts"
 import { openai } from '@ai-sdk/openai';
-import { streamText, convertToCoreMessages } from 'ai';
+import { streamText } from 'ai';
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
@@ -157,7 +157,7 @@ pnpm run dev
 Head back to your `api/chat/route.ts` file and add a system prompt to change how the model responds.
 ```typescript title="app/(5-chatbot)/api/chat/route.ts"
 import { openai } from '@ai-sdk/openai';
-import { streamText, convertToCoreMessages } from 'ai';
+import { streamText } from 'ai';
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
@@ -183,7 +183,7 @@ Head back to the browser and ask a new question to see the new response. Notice 
 Last one! Change the system prompt to anything you would like. I suggest some kind of pop culture reference.
 ```typescript title="app/(5-chatbot)/api/chat/route.ts"
 import { openai } from '@ai-sdk/openai';
-import { streamText, convertToCoreMessages } from 'ai';
+import { streamText } from 'ai';
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
