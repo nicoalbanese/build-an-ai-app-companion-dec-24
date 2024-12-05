@@ -8,8 +8,8 @@ const config = {
   async redirects() {
     return [
       {
-        source: "/",
-        destination: "/docs",
+        source: "/docs",
+        destination: "/docs/openai",
         permanent: true,
       },
     ];
