@@ -36,9 +36,9 @@ export default async function Page({
                 <Pre
                   className={
                     props?.className
-                      ?.split(" ")
-                      .filter((cn) => cn !== "max-h-[400px]")
-                      .join(" ") + " !max-h-fit"
+                      // ?.split(" ")
+                      // .filter((cn) => cn !== "max-h-[400px]")
+                      // .join(" ") + " !max-h-fit"
                   }
                 >
                   {props.children}

@@ -4,6 +4,9 @@ const withMDX = createMDX();
 
 /** @type {import('next').NextConfig} */
 const config = {
+  experimental: {
+    turbo: false
+  },
   reactStrictMode: true,
   async redirects() {
     return [
